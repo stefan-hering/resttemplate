@@ -1,6 +1,7 @@
 package org.hering;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.assertj.core.data.Percentage;
 import org.hering.rt.ApiResult;
 import org.hering.rt.FluentRestTemplate;
 import org.hering.rt.FluentSpringRestTemplate;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.data.Percentage.withPercentage;
 
 /**
  * Simple test to cover basic cases
@@ -74,6 +76,8 @@ public class FluentRestTemplateTest {
 
         var response = fluentRestTemplate.get("http://localhost/error", TestModel.class);
 
+        assertThat(response.status().value()).isCloseTo(400, withPercentage(0.5));
+
         assertThat(response.wasSuccessful()).isFalse();
         assertThat(response.hasFailed()).isTrue();
 
@@ -107,6 +111,71 @@ public class FluentRestTemplateTest {
                         .body("{\"type\":\"test\"}"));
 
         var response = fluentRestTemplate.post("http://localhost/error", null, TestModel.class);
+
+        assertThat(response.failure().isPresent()).isTrue();
+    }
+
+
+    @Test
+    public void testPatchSuccess() {
+        server.expect(MockRestRequestMatchers.requestTo("http://localhost/test"))
+                .andRespond(MockRestResponseCreators.withSuccess().headers(headers)
+                        .body("{\"value\":\"test\"}"));
+        var response = fluentRestTemplate.patch("http://localhost/test", null, TestModel.class);
+
+        assertThat(response.success(ApiResult::result).get().getValue()).isEqualTo("test");
+    }
+
+    @Test
+    public void testPatchFailure() {
+        server.expect(MockRestRequestMatchers.requestTo("http://localhost/error"))
+                .andRespond(MockRestResponseCreators.withBadRequest().headers(headers)
+                        .body("{\"type\":\"test\"}"));
+
+        var response = fluentRestTemplate.patch("http://localhost/error", null, TestModel.class);
+
+        assertThat(response.failure().isPresent()).isTrue();
+    }
+
+    @Test
+    public void testPutSuccess() {
+        server.expect(MockRestRequestMatchers.requestTo("http://localhost/test"))
+                .andRespond(MockRestResponseCreators.withSuccess().headers(headers)
+                        .body("{\"value\":\"test\"}"));
+        var response = fluentRestTemplate.put("http://localhost/test", null, TestModel.class);
+
+        assertThat(response.success().get().result()).isNull();
+    }
+
+    @Test
+    public void testPutFailure() {
+        server.expect(MockRestRequestMatchers.requestTo("http://localhost/error"))
+                .andRespond(MockRestResponseCreators.withBadRequest().headers(headers)
+                        .body("{\"type\":\"test\"}"));
+
+        var response = fluentRestTemplate.put("http://localhost/error", null, TestModel.class);
+
+        assertThat(response.failure().isPresent()).isTrue();
+    }
+
+
+    @Test
+    public void testDeleteSuccess() {
+        server.expect(MockRestRequestMatchers.requestTo("http://localhost/test"))
+                .andRespond(MockRestResponseCreators.withSuccess().headers(headers)
+                        .body("{\"value\":\"test\"}"));
+        var response = fluentRestTemplate.delete("http://localhost/test", TestModel.class);
+
+        assertThat(response.success().get().result()).isNull();
+    }
+
+    @Test
+    public void testDeleteFailure() {
+        server.expect(MockRestRequestMatchers.requestTo("http://localhost/error"))
+                .andRespond(MockRestResponseCreators.withBadRequest().headers(headers)
+                        .body("{\"type\":\"test\"}"));
+
+        var response = fluentRestTemplate.delete("http://localhost/error", TestModel.class);
 
         assertThat(response.failure().isPresent()).isTrue();
     }
