@@ -1,29 +1,23 @@
 package org.hering.rt;
 
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 
-import java.util.function.Function;
+public interface FluentRestTemplate<T> {
+    <R> RestResponse<R, T> get(String url, Class<R> responseType);
 
-public class FluentRestTemplate <T> {
-    private RestTemplate restTemplate;
-    private Function<String, T> responseMapper;
+    <R> RestResponse<R, T> get(String url, ParameterizedTypeReference<R> responseType);
 
-    public FluentRestTemplate() {
-        this(new RestTemplate(), e -> (T) e);
-    }
+    <R> RestResponse<R, T> post(String url, Object body, Class<R> responseType);
 
-    public FluentRestTemplate(RestTemplate restTemplate, Function<String, T> responseMapper) {
-        this.restTemplate = restTemplate;
-        this.responseMapper = responseMapper;
-    }
+    <R> RestResponse<R, T> post(String url, Object body, ParameterizedTypeReference<R> responseType);
 
-    public <R> RestResponse<R, T> get(String url, Class<R> responseType){
-        try {
-            var response = restTemplate.getForEntity(url, responseType);
-            return new SuccessResponse<>(response.getBody());
-        } catch(HttpStatusCodeException e) {
-            return new ErrorResponse<>(new ApiError(e.getStatusCode(), responseMapper.apply(e.getResponseBodyAsString())));
-        }
-    }
+    <R> RestResponse<Void, T> put(String url, Object body, Class<R> responseType);
+
+    <R> RestResponse<Void, T> put(String url, Object body, ParameterizedTypeReference<R> responseType);
+
+    <R> RestResponse<R, T> patch(String url, Object body, Class<R> responseType);
+
+    <R> RestResponse<R, T> patch(String url, Object body, ParameterizedTypeReference<R> responseType);
+
+    <Void> RestResponse<Void, T> delete(String url, Object body);
 }
